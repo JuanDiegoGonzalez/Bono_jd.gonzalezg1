@@ -2,27 +2,39 @@ package model.logic;
 
 public class Arco implements Comparable<Arco>
 {
-	private int origen;
+	private int fOrigen, cOrigen;
 
-	private int destino;
+	private int fDestino, cDestino;
 
-	private double costo;
+	private int costo;
 
-	public Arco(int porigen, int pdestino,  double pcosto)
+	public Arco(int pfOrigen, int pcOrigen, int pfDestino, int pcDestino, int pcosto)
 	{
-		origen = porigen;
-		destino = pdestino;
+		fOrigen = pfOrigen;
+		cOrigen = pcOrigen;
+		fDestino = pfDestino;
+		cDestino = pcDestino;
 		costo = pcosto;
 	}
 
-	public int darOrigen()
+	public int darFOrigen()
 	{
-		return origen;
+		return fOrigen;
 	}
 
-	public int darDest()
+	public int darCOrigen()
 	{
-		return destino;
+		return cOrigen;
+	}
+
+	public int darFDest()
+	{
+		return fDestino;
+	}
+
+	public int darCDest()
+	{
+		return cDestino;
 	}
 
 	public double darCosto()
@@ -30,22 +42,43 @@ public class Arco implements Comparable<Arco>
 		return costo;
 	}
 
-	public void cambiarcosto(double param)
+	public void cambiarcosto(int param)
 	{
 		costo = param;
 	}
 
 	@Override
-	public int compareTo(Arco param) {
-		if(origen == param.origen && destino == param.destino)
-		{
+	public int compareTo(Arco o)
+	{
+		if(this.fOrigen == o.fOrigen && this.cOrigen == o.cOrigen && this.fDestino == o.fDestino && this.cDestino == o.cDestino)
 			return 0;
-		}
-		else if(origen > param.origen && destino > param.destino)
-		{
+		else
 			return 1;
+	}
+
+	public int[] either() {
+
+		int[] respuesta = new int[2];
+		respuesta[0] = fDestino;
+		respuesta[1] = cDestino;
+		return respuesta;
+	}
+
+	public int[] other(int fvertex, int cvertex) {
+		if (fvertex == fOrigen && cvertex == cOrigen)
+		{
+			int[] respuesta = new int[2];
+			respuesta[0] = fDestino;
+			respuesta[1] = cDestino;
+			return respuesta;
 		}
-		else 
-			return -1;
+		else if (fvertex == fDestino && cvertex == cDestino)
+		{
+			int[] respuesta = new int[2];
+			respuesta[0] = fOrigen;
+			respuesta[1] = cOrigen;
+			return respuesta;
+		}
+		else throw new IllegalArgumentException("Illegal endpoint");
 	}
 }

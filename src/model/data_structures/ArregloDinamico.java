@@ -1,6 +1,8 @@
 package model.data_structures;
 
-public class ArregloDinamico<T extends Comparable<T>> 
+import java.util.Iterator;
+
+public class ArregloDinamico<T extends Comparable<T>> implements Iterable<T>
 {
 	/**
 	 * Capacidad maxima del arreglo
@@ -59,7 +61,7 @@ public class ArregloDinamico<T extends Comparable<T>>
 	{
 		for(T actual : elementos)
 		{
-			if(dato.compareTo(actual) == 0)
+			if(actual != null && dato.compareTo(actual) == 0)
 			{return actual;}
 		}
 		return null;
@@ -119,28 +121,16 @@ public class ArregloDinamico<T extends Comparable<T>>
 	{
 		return elementos[darTamano()-1];
 	}
-
-	public ArregloDinamico<T> darPrimeros10Viajes()
-	{
-		ArregloDinamico<T> respuesta = new ArregloDinamico<>(10);
-		
-		for (int i = 0; i < 10 && i < tamanoAct; i++)
-		{
-			respuesta.cambiarElemento(elementos[i], i);
-		}
-		
-		return respuesta;		
-	}
 	
-	public ArregloDinamico<T> darUltimos10Viajes()
-	{
-		ArregloDinamico<T> respuesta = new ArregloDinamico<>(10);
-		
-		for (int i = tamanoAct - 1; i > tamanoAct - 11 && i >= 0; i--)
+	@Override
+	public Iterator<T> iterator() {
+
+		Queue<T> respuesta = new Queue<>();
+
+		for (int i = 0; i < tamanoAct; i++)
 		{
-			respuesta.cambiarElemento(elementos[i], tamanoAct - i - 1);
+			respuesta.enqueue(elementos[i]);
 		}
-		
-		return respuesta;		
+		return (respuesta.iterator());
 	}
 }

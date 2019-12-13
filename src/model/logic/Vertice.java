@@ -1,50 +1,46 @@
 package model.logic;
 
+import model.data_structures.ArregloDinamico;
+
 public class Vertice implements Comparable<Vertice>
 {
-	private int id;
+	private int F, C;
+	
+	public ArregloDinamico<Arco> arcos;
 
-	private double longitud, latitud;
-
-	private int MOVEMENT_ID;
-
-	public Vertice(int pId, double pLongitud, double pLatitud, int pMOVEMENT_ID)
+	public Vertice(int f, int c)
 	{
-		id = pId;
-		longitud = pLongitud;
-		latitud = pLatitud;
-		MOVEMENT_ID = pMOVEMENT_ID;
+		F = f;
+		C = c;
+		arcos = new ArregloDinamico<>(1);
+	}
+
+	public int F()
+	{
+		return F;
 	}
 	
-	public int compareTo(Vertice param) {
-		if(id > param.id)
-		{
+	public int C()
+	{
+		return C;
+	}
+
+	@Override
+	public int compareTo(Vertice o)
+	{
+		if(this.F == o.F && this.C == o.C)
+			return 0;
+		else
 			return 1;
-		}
-		else if(id < param.id)
-		{
-			return -1;
-		}
-		return 0;
 	}
 	
-	public int darId()
+	public void agregarArco(Arco param)
 	{
-		return id;
+		arcos.agregar(param);
 	}
-	
-	public double darLongitud()
+
+	public ArregloDinamico<Arco> darArcos()
 	{
-		return longitud;
-	}
-	
-	public double darLatitud()
-	{
-		return latitud;
-	}
-	
-	public int darMID()
-	{
-		return MOVEMENT_ID;
+		return arcos;
 	}
 }

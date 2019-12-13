@@ -3,6 +3,8 @@ package controller;
 import java.util.InputMismatchException;
 import java.util.Scanner;
 
+import model.data_structures.ArregloDinamico;
+import model.logic.Arco;
 import model.logic.MVCModelo;
 import view.MVCView;
 
@@ -52,12 +54,23 @@ public class Controller {
 			switch(option){
 			case 1:
 
+				System.out.println("--------- \nEscribir nombre del archivo (sin el .txt): ");
+				System.out.println("El archivo debe estar en la carpeta /data");
+				String nombreArchivo = lector.next();
+
 				try
 				{
-					modelo.cargarGrafo();
+					ArregloDinamico<Arco> arcos = modelo.cargarGrafo(nombreArchivo);
 					System.out.println("Grafo cargado");
-					System.out.println("Cantidad de vertices cargados: " + modelo.darNumeroVertices());
 					System.out.println("Cantidad de arcos cargados: " + modelo.darNumeroArcos() + "\n---------");
+
+					for (int i = 0; i < arcos.darTamano(); i++)
+					{
+						Arco actual = arcos.darElemento(i);
+						System.out.println("(" + actual.darFOrigen() + "," + actual.darCOrigen() + ") - (" + actual.darFDest() + "," + actual.darCDest() + ")");
+					}
+					System.out.println("---------");
+
 				}
 				catch(Exception e)
 				{					
@@ -69,57 +82,75 @@ public class Controller {
 
 			case 2:
 
-				try
+				ArregloDinamico<Arco> arcos = modelo.ponerPesos();
+
+				System.out.println("Grafo cargado");
+				System.out.println("Cantidad de arcos cargados: " + modelo.darNumeroArcos() + "\n---------");
+
+				for (int i = 0; i < arcos.darTamano(); i++)
 				{
-					modelo.escribirJSON();
-					System.out.println("El grafo se guardó en formato JSON\n---------");
+					Arco actual = arcos.darElemento(i);
+					System.out.println("(" + actual.darFOrigen() + "," + actual.darCOrigen() + ") - (" + actual.darFDest() + "," + actual.darCDest() + ") // Peso: " + actual.darCosto());
 				}
-				catch (Exception e)
-				{
-					System.out.println("No se pudo persistir el grafo.\n---------");
-					e.printStackTrace();
-				}
-				
+				System.out.println("---------");
+
 				break;
 
 			case 3:
 
+				int fIni;
+				int cIni;
+				int fFin;
+				int cFin;
 				try
 				{
-					modelo.leerJSON();
-					System.out.println("Grafo cargado");
-					System.out.println("Cantidad de vertices cargados: " + modelo.darNumeroVertices());
-					System.out.println("Cantidad de arcos cargados: " + modelo.darNumeroArcos() + "\n---------");
+					System.out.println("---------\nDar fila del vértice de origen: ");
+					fIni = lector.nextInt();
+					System.out.println("---------\nDar columna del vértice de origen: ");
+					cIni = lector.nextInt();
+					System.out.println("---------\nDar fila del vértice de destino: ");
+					fFin = lector.nextInt();
+					System.out.println("---------\nDar columna del vértice de destino: ");
+					cFin = lector.nextInt();
 				}
-				catch(Exception e)
-				{					
-					System.out.println("Se produjo un error al cargar el grafo.");
-					e.printStackTrace();
-				}
-				
-				break;
-
-			case 4:
-
-				System.out.println("---------\nCantidad de componentes conectados: " + modelo.cantidadCC() + "\n---------");
-				
-				break;
-
-			case 5:
-
-				try
+				catch(InputMismatchException e)
 				{
-					modelo.crearMapa();
-					System.out.println("Se creo el mapa correctamente en la carpeta /data. Cambiar el tipo de archivo a .html para visualizarlo");
+					option = 0;
+					break;
 				}
-				catch (Exception e)
+
+				if(fIni >= 0 && fIni < modelo.darM() && fFin >= 0 && fFin < modelo.darM() && cIni >= 0 && cIni < modelo.darN() && cFin >= 0 && cFin < modelo.darN())
 				{
-					e.printStackTrace();
-					System.out.println("Hubo un error creando el mapa");
+					int[][] vertices = modelo.caminoMasCorto(fIni, cIni, fFin, cFin);
+
+					if(vertices != null)
+					{
+						for(int i = 0; i < modelo.darM(); i++)
+						{
+							for(int j = 0; j < modelo.darN(); j++)
+							{	
+								if(vertices[i][j] >= 0)
+									System.out.print(vertices[i][j]);
+								else
+									System.out.print("X");
+							}
+							System.out.println();
+						}
+						System.out.println("---------");
+					}
+					else
+					{
+						System.out.println("No hay ningun camino entre los vértices\n---------");
+					}
 				}
+				else
+				{
+					System.out.println("Ingrese un valor válido de filas y columnas\n---------");	
+				}
+
 				break;
 
-			case 6: 
+			case 4: 
 				System.out.println("--------- \n Hasta pronto !! \n---------"); 
 				lector.close();
 				fin = true;

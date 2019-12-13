@@ -15,8 +15,9 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
 import model.data_structures.ArregloDinamico;
+import model.data_structures.DijkstraUndirectedSP;
 import model.data_structures.Graph;
-import model.data_structures.Haversine;
+import model.data_structures.Queue;
 import model.data_structures.Stack;
 
 /**
@@ -28,51 +29,81 @@ public class MVCModelo{
 	 * Atributos del modelo del mundo
 	 */
 	private Graph<Integer, Vertice> grafo;
+	private int[][] verticesEnNumeros;
 
 	/**
 	 * Constructor del modelo del mundo
 	 */
 	public MVCModelo()
-	{
-		grafo = new Graph<>(250000);
-	}
+	{}
 
-	public void cargarGrafo() throws Exception
+	public ArregloDinamico<Arco> cargarGrafo(String nombreArchivo) throws Exception
 	{
-		BufferedReader br = new BufferedReader(new FileReader(new File("data/bogota_vertices.txt")));
+		BufferedReader br = new BufferedReader(new FileReader(new File("data/" + nombreArchivo + ".txt")));
 		String linea = br.readLine();
-		linea = br.readLine();
+
+		int filas = 0;
+		int columnas = linea.length();
+
+		Queue<Integer> vertices = new Queue<>();
 
 		while(linea != null)
 		{
-			String[] datos = linea.split(";");
+			filas++;
 
-			if(!datos.equals(""))
-			{
-				Vertice nuevo = new Vertice(Integer.parseInt(datos[0]), Double.parseDouble(datos[1]), Double.parseDouble(datos[2]), Integer.parseInt(datos[3]));
-
-				grafo.addVertex(Integer.parseInt(datos[0]), nuevo);
-			}
+			for(int i = 0; i < columnas; i++)
+				vertices.enqueue(Integer.parseInt(linea.charAt(i) + ""));
 
 			linea = br.readLine();
 		}
 		br.close();
 
-		br = new BufferedReader(new FileReader(new File("data/bogota_arcos.txt")));
-		linea = br.readLine();
+		grafo = new Graph<>(filas, columnas);
+		int[][] pVertices = new int[filas][columnas];
+		verticesEnNumeros = pVertices;
 
-		while(linea != null)
+		for(int i = 0; i < filas; i++)
 		{
-			String[] datos = linea.split(" ");
-
-			for (int i = 1; i < datos.length; i++)
+			for(int j = 0; j < columnas; j++)
 			{
-				grafo.addEdge(Integer.parseInt(datos[0]), Integer.parseInt(datos[i]), 0);
+				if(vertices.dequeue() == 1)
+				{
+					grafo.addVertex(i, j, new Vertice(i, j));
+					verticesEnNumeros[i][j] = 1;
+				}
+				else
+				{
+					verticesEnNumeros[i][j] = 0;
+				}
 			}
-
-			linea = br.readLine();
 		}
-		br.close();
+
+		for(int i = 0; i < filas; i++)
+		{
+			for(int j = 0; j < columnas; j++)
+			{
+				if(verticesEnNumeros[i][j] == 1)
+				{
+					if(i != 0 && verticesEnNumeros[i-1][j] == 1 && grafo.arcos.buscar(new Arco(i-1, j, i, j, 0)) == null)
+					{
+						grafo.addEdge(i, j, i-1, j, 1);
+					}
+					if(i+1 != filas && verticesEnNumeros[i+1][j] == 1 && grafo.arcos.buscar(new Arco(i+1, j, i, j, 0)) == null)
+					{
+						grafo.addEdge(i, j, i+1, j, 1);
+					}
+					if(j != 0 && verticesEnNumeros[i][j-1] == 1 && grafo.arcos.buscar(new Arco(i, j-1, i, j, 0)) == null)
+					{
+						grafo.addEdge(i, j, i, j-1, 1);
+					}
+					if(j+1 != columnas && verticesEnNumeros[i][j+1] == 1 && grafo.arcos.buscar(new Arco(i, j+1, i, j, 0)) == null)
+					{
+						grafo.addEdge(i, j, i, j+1, 1);
+					}
+				}
+			}
+		}
+		return grafo.arcos;
 	}
 
 	//----------------------------
@@ -89,167 +120,143 @@ public class MVCModelo{
 		return grafo.E();
 	}
 
-	public void escribirJSON()
+	public int darM()
 	{
-		JSONArray listaVertices = new JSONArray();
-
-		for (int i = 0; i < grafo.size(); i++)
-		{
-			Vertice actual = grafo.getInfoVertex(i);
-
-			if(actual != null)
-			{
-				JSONObject datosVertice = new JSONObject();
-				datosVertice.put("id", actual.darId());
-				datosVertice.put("longitud", actual.darLongitud());
-				datosVertice.put("latitud", actual.darLatitud());
-				datosVertice.put("MOVEMENT_ID", actual.darMID());
-
-				JSONObject vertice = new JSONObject(); 
-				vertice.put("vertice", datosVertice);
-
-				listaVertices.add(vertice);
-			}
-		}
-
-		try (FileWriter file1 = new FileWriter(new File("data/vertices.json"))) {
-
-			file1.write(listaVertices.toJSONString());
-			file1.flush();
-
-		} catch (IOException e)
-		{e.printStackTrace();}
-
-		JSONArray listaArcos = new JSONArray();
-
-		for (int i = 0; i < grafo.arcos.darTamano(); i++)
-		{
-			Arco actual = grafo.arcos.darElemento(i);
-
-			JSONObject datosArco = new JSONObject();
-			datosArco.put("origen", actual.darOrigen());
-			datosArco.put("destino", actual.darDest());
-			datosArco.put("costo", actual.darCosto());
-
-			JSONObject arco = new JSONObject(); 
-			arco.put("arco", datosArco);
-
-			listaArcos.add(arco);
-		}
-
-		try (FileWriter file2 = new FileWriter(new File("data/arcos.json"))) {
-
-			file2.write(listaArcos.toJSONString());
-			file2.flush();
-
-		} catch (IOException e)
-		{e.printStackTrace();}		
+		return grafo.M();
 	}
 
-	public void leerJSON()
+	public int darN()
 	{
-		grafo = new Graph<>(250000);
-
-		JSONParser jsonParser = new JSONParser();
-
-		try (FileReader reader = new FileReader("data/vertices.json"))
-		{
-			Object obj = jsonParser.parse(reader);
-
-			JSONArray array = (JSONArray) obj;
-
-			for(int i = 0; i < array.size(); i++)
-			{
-				JSONObject actual = (JSONObject) array.get(i);
-				JSONObject verticeActual = (JSONObject) actual.get("vertice");
-
-				Vertice nuevo = new Vertice(((Long)verticeActual.get("id")).intValue(), (double)verticeActual.get("longitud"), (double)verticeActual.get("latitud"), ((Long)verticeActual.get("MOVEMENT_ID")).intValue());
-
-				grafo.addVertex(((Long)verticeActual.get("id")).intValue(), nuevo);
-			}
-		}
-		catch (Exception e)
-		{e.printStackTrace();}
-
-		ArregloDinamico<Arco> arcosCargados = new ArregloDinamico<>(1);
-
-		jsonParser = new JSONParser();
-
-		try (FileReader reader = new FileReader("data/arcos.json"))
-		{
-			Object obj = jsonParser.parse(reader);
-
-			JSONArray array = (JSONArray) obj;
-
-			for(int i = 0; i < array.size(); i++)
-			{
-				JSONObject actual = (JSONObject) array.get(i);
-				JSONObject arcoActual = (JSONObject) actual.get("arco");
-
-				Arco nuevo = new Arco(((Long)arcoActual.get("origen")).intValue(), ((Long)arcoActual.get("destino")).intValue(), (double)arcoActual.get("costo"));
-
-				grafo.addEdge(((Long)arcoActual.get("origen")).intValue(), ((Long)arcoActual.get("destino")).intValue(), (double)arcoActual.get("costo"));
-				arcosCargados.agregar(nuevo);
-			}
-		}
-		catch (Exception e)
-		{e.printStackTrace();}		
-
-		grafo.arcos = arcosCargados;
+		return grafo.N();
 	}
 
-	public int cantidadCC()
+	public ArregloDinamico<Arco> ponerPesos()
 	{
-		return grafo.cc();
-	}
+		Graph<Integer, Vertice> nuevoGrafo = new Graph<>(grafo.M(), grafo.N());
 
-	public void crearMapa() throws Exception 
-	{
-		FileReader reader = new FileReader(new File("data/index.txt"));
-		BufferedReader bf = new BufferedReader(reader);
-
-		BufferedWriter pf = new BufferedWriter(new PrintWriter(new File("data/mapa.txt")));
-
-		boolean llego = false;
-		while(llego == false)
+		for(int i = 0; i < grafo.M(); i++)
 		{
-			String lineaActual = bf.readLine();
-			pf.write(lineaActual + "\n");
-
-			if(lineaActual.equals("//kiwi"))
-			{
-				llego = true;
+			for(int j = 0; j < grafo.N(); j++)
+			{				
+				if(verticesEnNumeros[i][j] > 0)
+				{
+					if(i != 0 && i+verticesEnNumeros[i][j] != grafo.M() && (j-verticesEnNumeros[i][j] < 0 || verticesEnNumeros[i][j-verticesEnNumeros[i][j]] == 0) && (j+verticesEnNumeros[i][j] >= grafo.N() || verticesEnNumeros[i][j+verticesEnNumeros[i][j]] == 0))
+					{
+						verticesEnNumeros[i][j]++;
+					}
+					if(j != 0 && j+verticesEnNumeros[i][j] != grafo.N() && (i-verticesEnNumeros[i][j] < 0 || verticesEnNumeros[i-verticesEnNumeros[i][j]][j] == 0) && (i+verticesEnNumeros[i][j] >= grafo.M() || verticesEnNumeros[i+verticesEnNumeros[i][j]][j] == 0))
+					{
+						verticesEnNumeros[i][j]++;
+					}
+				}
 			}
 		}		
 
-		for (int i = 0; i < grafo.arcos.darTamano(); i++)
+		int a = 0;
+
+		while(a < Math.max(grafo.M(), grafo.N()))
 		{
-			Arco actual = grafo.arcos.darElemento(i);
+			a++;
 
-			Vertice vertice1 = grafo.getInfoVertex(actual.darOrigen());
-			Vertice vertice2 = grafo.getInfoVertex(actual.darDest());
-
-			if(vertice1.darLatitud() < 4.621360 && vertice1.darLatitud() > 4.597714 && vertice1.darLongitud() < -74.062707 && vertice1.darLongitud() > -74.094723 && vertice2.darLatitud() < 4.621360 && vertice2.darLatitud() > 4.597714 && vertice2.darLongitud() < -74.062707 && vertice2.darLongitud() > -74.094723)
+			for(int i = 0; i < grafo.M(); i++)
 			{
-				pf.write("line = [{lat: " + vertice1.darLatitud() + ", lng: " + vertice1.darLongitud() + "},{lat: " + vertice2.darLatitud() + ", lng: " + vertice2.darLongitud() + "}];\n");
-				pf.write("path = new google.maps.Polyline({path: line, strokeColor: '#FF0000', strokeWeight: 2});\n");
-				pf.write("path.setMap(map);\n");
+				for(int j = 0; j < grafo.N(); j++)
+				{
+					if(verticesEnNumeros[i][j] == 1)
+					{
+						if(i-1 >= 0 && i-verticesEnNumeros[i-1][j] >= 0)
+						{
+							if(verticesEnNumeros[i-verticesEnNumeros[i-1][j]][j] > 1)
+							{
+								verticesEnNumeros[i-1][j]++;
+							}
+						}
+						if(i+1 < grafo.M() && i+verticesEnNumeros[i+1][j] < grafo.M())
+						{
+							if(verticesEnNumeros[i+verticesEnNumeros[i+1][j]][j] > 1)
+							{
+								verticesEnNumeros[i+1][j]++;
+							}
+						}
+						if(j-1 >= 0 && j-verticesEnNumeros[i][j-1] >= 0)
+						{
+							if(verticesEnNumeros[i][j-verticesEnNumeros[i][j-1]] > 1)
+							{
+								verticesEnNumeros[i][j-1]++;							
+							}
+						}
+						if(j+1 < grafo.N() && j+verticesEnNumeros[i][j+1] < grafo.N())
+						{
+							if(verticesEnNumeros[i][j+verticesEnNumeros[i][j+1]] > 1)
+							{
+								verticesEnNumeros[i][j+1]++;						
+							}
+						}
+					}
+				}
+			}
+		}
+		for(int i = 0; i < grafo.M(); i++)
+		{
+			for(int j = 0; j < grafo.N(); j++)
+			{
+				if(verticesEnNumeros[i][j] == 1)
+				{
+					nuevoGrafo.addVertex(i, j, new Vertice(i, j));
+				}
 			}
 		}
 
-		boolean acabo = false;
-		while(acabo == false)
+		for(int i = 0; i < grafo.M(); i++)
 		{
-			String lineaActual = bf.readLine();
-			pf.write(lineaActual + "\n");
-
-			if(lineaActual.equals("//acabe"))
+			for(int j = 0; j < grafo.N(); j++)
 			{
-				acabo = true;
+				if(verticesEnNumeros[i][j] == 1)
+				{
+					if(i-1 >= 0 && verticesEnNumeros[i-1][j] >= 1 && nuevoGrafo.arcos.buscar(new Arco(i-verticesEnNumeros[i-1][j], j, i, j, 0)) == null)
+					{
+						nuevoGrafo.addEdge(i, j, i-verticesEnNumeros[i-1][j], j, verticesEnNumeros[i-1][j]);
+					}
+					if(i+1 < grafo.M() && verticesEnNumeros[i+1][j] >= 1 && nuevoGrafo.arcos.buscar(new Arco(i+verticesEnNumeros[i+1][j], j, i, j, 0)) == null)
+					{
+						nuevoGrafo.addEdge(i, j, i+verticesEnNumeros[i+1][j], j, verticesEnNumeros[i+1][j]);
+					}
+					if(j-1 >= 0 && verticesEnNumeros[i][j-1] >= 1 && nuevoGrafo.arcos.buscar(new Arco(i, j-verticesEnNumeros[i][j-1], i, j, 0)) == null)
+					{
+						nuevoGrafo.addEdge(i, j, i, j-verticesEnNumeros[i][j-1], verticesEnNumeros[i][j-1]);
+					}
+					if(j+1 < grafo.N() && verticesEnNumeros[i][j+1] >= 1 && nuevoGrafo.arcos.buscar(new Arco(i, j+verticesEnNumeros[i][j+1], i, j, 0)) == null)
+					{
+						nuevoGrafo.addEdge(i, j, i, j+verticesEnNumeros[i][j+1], verticesEnNumeros[i][j+1]);
+					}
+				}
 			}
 		}
 
-		bf.close();
-		pf.close();
+		grafo = nuevoGrafo;
+
+		return grafo.arcos;
+	}
+
+	public int[][] caminoMasCorto(int fOrigen, int cOrigen, int fDestino, int cDestino)
+	{
+		DijkstraUndirectedSP dijkstra = new DijkstraUndirectedSP(grafo, fOrigen, cOrigen);
+
+		Stack<Arco> arcos = (Stack<Arco>) dijkstra.pathTo(fDestino, cDestino);
+
+		if(arcos != null)
+		{
+			int[][] respuesta = verticesEnNumeros;
+			
+			while(!arcos.isEmpty())
+			{
+				Arco actual = arcos.pop();
+				respuesta[actual.darFOrigen()][actual.darCOrigen()] = -1;
+				respuesta[actual.darFDest()][actual.darCDest()] = -1;
+			}
+			return respuesta;
+		}
+		else
+			return null;
 	}
 }
